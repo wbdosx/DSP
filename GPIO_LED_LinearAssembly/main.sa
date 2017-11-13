@@ -1,0 +1,88 @@
+;****************************************************************************/
+;*                                                                          */
+;* 广州创龙电子科技有限公司                                                 */
+;*                                                                          */
+;* Copyright (C) 2014-2016 Guangzhou Tronlong Electronic Technology Co.,Ltd */
+;*                                                                          */
+;****************************************************************************/
+;****************************************************************************
+;*                                                                          *
+;*              底板 LED（线性汇编）                                        *
+;*                                                                          *
+;*              2016年02月18日                                              *
+;*                                                                          *
+;****************************************************************************
+    .global		main                                 ; 全局符号
+
+main:	.cproc                                       ; 线性汇编程序开始
+
+; 变量声明
+		.reg	SYSCFG_PINMUX1, GPIO_PINMUX
+		.reg	GPIO_DIR01, GPIO_DIR01_VALUE
+		.reg	GPIO_OUT_DATA01, GPIO_OUT_DATA01_VALUE
+		.reg	DELAY_VALUE
+
+; GPIO 管脚复用配置
+        MVKL	0x1C14124, SYSCFG_PINMUX1            ; 系统配置模块（System Configuration (SYSCFG) Module）
+        MVKH	0x1C14124, SYSCFG_PINMUX1            ; 管脚复用配置寄存器（PINMUX1）
+
+;                 LED D7      LED D9      LED D10     LED D6
+;                 GPIO0[0]    GPIO0[1]    GPIO0[2]    GPIO0[5]
+        MVKL	((8 << 28) | (8 << 24) | (8 << 20) | (8 << 8)), GPIO_PINMUX
+        MVKH	((8 << 28) | (8 << 24) | (8 << 20) | (8 << 8)), GPIO_PINMUX
+
+        STW		GPIO_PINMUX, *SYSCFG_PINMUX1         ; 赋值（存储字（WORD）到内存）
+
+; GPIO 管脚方向配置
+        MVKL	0x1E26010, GPIO_DIR01                ; 通用输入输出口（General-Purpose Input/Output (GPIO)）
+        MVKH	0x1E26010, GPIO_DIR01                ; GPIO Banks 0 和 1 管脚方向配置寄存器（DIR01）
+
+;                 LED D6     LED D10    LED D9     LED D7
+;                 GPIO0[5]   GPIO0[2]   GPIO0[1]   GPIO0[0]
+        MVKL	((0 << 5) | (0 << 2) | (0 << 1) | (0 << 0)), GPIO_DIR01_VALUE
+        MVKH	((0 << 5) | (0 << 2) | (0 << 1) | (0 << 0)), GPIO_DIR01_VALUE
+
+        STW		GPIO_DIR01_VALUE, *GPIO_DIR01        ; 赋值（存储字（WORD）到内存）
+
+; 延时值
+        MVKL	0x00FFFFFF, DELAY_VALUE
+        MVKH	0x00FFFFFF, DELAY_VALUE
+
+; GPIO 管脚输出配置
+        MVKL	0x1E26014, GPIO_OUT_DATA01           ; 通用输入输出口（General-Purpose Input/Output (GPIO)）
+        MVKH	0x1E26014, GPIO_OUT_DATA01           ; GPIO Banks 0 和 1 管脚输出配置寄存器（OUT_DATA01）
+
+; 主循环
+LED_Loop:
+        MVK		0x00000001, GPIO_OUT_DATA01_VALUE    ; LED D7
+        STW		GPIO_OUT_DATA01_VALUE, *GPIO_OUT_DATA01
+
+        .call delay(DELAY_VALUE)
+
+        MVK		0x00000020, GPIO_OUT_DATA01_VALUE    ; LED D6
+        STW		GPIO_OUT_DATA01_VALUE, *GPIO_OUT_DATA01
+
+        .call delay(DELAY_VALUE)
+
+        MVK		0x00000002, GPIO_OUT_DATA01_VALUE    ; LED D9
+        STW		GPIO_OUT_DATA01_VALUE, *GPIO_OUT_DATA01
+
+        .call delay(DELAY_VALUE)
+
+        MVK		0x00000004, GPIO_OUT_DATA01_VALUE    ; LED D10
+        STW		GPIO_OUT_DATA01_VALUE, *GPIO_OUT_DATA01
+
+        .call delay(DELAY_VALUE)
+
+        B		LED_Loop
+
+        .endproc                                     ; 线性汇编程序结束
+
+delay:	.cproc i                                     ; 线性汇编程序开始
+
+LOOP:
+    [i] SUB		i, 1, i                              ; 自减（i--）
+    [i] B		LOOP
+        .return
+
+        .endproc                                     ; 线性汇编程序结束
