@@ -1,0 +1,18 @@
+# 文件
+# .gitignore
+.xdchelp
+
+# 目录
+.metadata/
+.jxbrowser-data/
+.platformWizard/
+dvt/
+.launches/
+.settings/
+.config/
+src/
+Debug/
+Release/
+
+# 额外
+!/Library/Debug/
